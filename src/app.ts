@@ -1,7 +1,7 @@
 import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-// import router from "./app/routes";
+import router from "./app/routes";
 // import { globalErrorHandler, notFoundHandler } from "./app/middlewares";
 
 const app: Application = express();
@@ -20,8 +20,8 @@ app.get("/", (req: Request, res: Response) => {
   });
 });
 
-// //? APIs v1 All Routes
-// app.use("/api/v1", router);
+//? APIs v1 All Routes
+app.use("/api/v1", router);
 
 // //! Global Error Handler
 // app.use(globalErrorHandler);
