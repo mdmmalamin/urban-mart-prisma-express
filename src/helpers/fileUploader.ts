@@ -39,7 +39,7 @@ const uploadToCloudinary = async (
       file.path,
       {
         public_id: fileName,
-        folder: `healthcare-ms/${folder}`,
+        folder: `urban-mart/${folder}`,
       },
 
       (

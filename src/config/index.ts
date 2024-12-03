@@ -27,4 +27,9 @@ export default {
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
   },
+  superAdmin: {
+    email: process.env.SUPER_ADMIN_EMAIL,
+    password: process.env.SUPER_ADMIN_PASSWORD,
+    phone: process.env.SUPER_ADMIN_PHONE,
+  },
 };
