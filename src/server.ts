@@ -6,7 +6,7 @@ const port = config.port || 3000;
 
 async function main() {
   const server: Server = app.listen(port, () => {
-    console.log("Urban Mart Management System Is Listening On ", port);
+    console.log("Urban Mart is listening on", port);
   });
 }
 
