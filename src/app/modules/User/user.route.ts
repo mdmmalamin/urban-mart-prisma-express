@@ -1,12 +1,14 @@
 import express from "express";
 import { UserController } from "./user.controller";
 import { fileUploader, formDataParser } from "../../../helpers";
+import { auth } from "../../middlewares/auth";
+import { UserRole } from "@prisma/client";
 
 const router = express.Router();
 
 router.post(
   "/create-admin", //? specific Route for creating an admin
-  // auth(UserRole.SUPER_ADMIN, UserRole.ADMIN), //? for Authorization guard
+  auth(UserRole.SUPER_ADMIN, UserRole.ADMIN), //? for Authorization guard
   fileUploader.upload.single("file"), //? for multer file upload
   formDataParser, //? for formData stringify to JSON.parse
   // validateRequest(UserValidation.createAdminSchema), //? for Zod validation schema

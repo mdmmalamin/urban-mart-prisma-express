@@ -7,7 +7,7 @@ import {
   TRegisterCustomer,
   TRegisterVendor,
 } from "./user.interface";
-import { hashedPassword } from "../../../helpers/hashedPassword";
+import { hashedPassword } from "../../../helpers";
 import ApiError from "../../errors/ApiError";
 
 const createAdminIntoDB = async (
