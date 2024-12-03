@@ -12,7 +12,7 @@ model User {
   email             String?    @unique
   phone             String     @unique
   password          String
-  role              UserRole
+  role              UserRole   @default(CUSTOMER)
   status            UserStatus @default(ACTIVE)
   passwordChangedAt DateTime?
 
@@ -43,13 +43,13 @@ model Admin {
 }
 
 model Vendor {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  fullName    String
-  gender      Gender
-  dateOfBirth DateTime
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  fullName    String?
+  gender      Gender?
+  dateOfBirth DateTime?
   avatar      String?
-  isDeleted   Boolean  @default(false)
+  isDeleted   Boolean   @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -61,13 +61,13 @@ model Vendor {
 }
 
 model Customer {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  fullName    String
-  gender      Gender
-  dateOfBirth DateTime
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  fullName    String?
+  gender      Gender?
+  dateOfBirth DateTime?
   avatar      String?
-  isDeleted   Boolean  @default(false)
+  isDeleted   Boolean   @default(false)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

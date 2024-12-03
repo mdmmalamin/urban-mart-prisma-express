@@ -1,45 +1,147 @@
-import bcrypt from "bcrypt";
 import { fileUploader } from "../../../helpers";
 import { TFile } from "../../interfaces";
-import config from "../../../config";
 import { UserRole } from "@prisma/client";
-import { prisma } from "../../../shared";
+import { httpStatus, prisma } from "../../../shared";
+import {
+  TCreateAdmin,
+  TRegisterCustomer,
+  TRegisterVendor,
+} from "./user.interface";
+import { hashedPassword } from "../../../helpers/hashedPassword";
+import ApiError from "../../errors/ApiError";
 
-const createAdminIntoDB = async (file: TFile | undefined, payload: any) => {
+const createAdminIntoDB = async (
+  file: TFile | undefined,
+  payload: TCreateAdmin
+) => {
   if (file) {
-    const fileName = `${payload?.admin?.name}-${payload?.admin?.phone}`;
+    const fileName = `${payload?.admin?.fullName}-${payload?.admin?.phone}`;
     const { secure_url } = await fileUploader.uploadToCloudinary(
       file,
       fileName,
       "profile/admin"
     );
+
     payload.admin.avatar = secure_url;
   }
 
-  const hashedPassword: string = await bcrypt.hash(
-    payload.password,
-    Number(config.bcrypt.salt_rounds)
-  );
-
   const userData = {
-    password: hashedPassword,
-    email: payload.admin.email,
+    email: payload.admin.email.toLowerCase(),
     phone: payload.admin.phone,
+    password: await hashedPassword(payload.password),
     role: UserRole.ADMIN,
   };
 
-  const adminData = payload.admin;
+  const adminData = {
+    fullName: payload.admin.fullName,
+    gender: payload.admin.gender,
+    dateOfBirth: payload.admin.dateOfBirth,
+    avatar: payload.admin.avatar,
+  };
 
   const result = await prisma.$transaction(async (txClient) => {
-    await txClient.user.create({
+    const createUser = await txClient.user.create({
       data: userData,
     });
 
-    const createdAdminData = await txClient.admin.create({
-      data: adminData,
+    const createdAdmin = await txClient.admin.create({
+      data: {
+        userId: createUser.id,
+        ...adminData,
+      },
+      include: {
+        user: true,
+      },
     });
 
-    return createdAdminData;
+    return createdAdmin;
+  });
+
+  return result;
+};
+
+const createVendorIntoDB = async (payload: TRegisterVendor) => {
+  const { email, phone, password } = payload;
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ email: email || undefined }, { phone: phone }],
+    },
+  });
+
+  if (existingUser) {
+    throw new ApiError(
+      httpStatus.CONFLICT,
+      "Your phone or email already exists."
+    );
+  }
+
+  const userData = {
+    email: email.toLowerCase(),
+    phone,
+    password: await hashedPassword(password),
+  };
+
+  const result = await prisma.$transaction(async (txClient) => {
+    const createUser = await txClient.user.create({
+      data: {
+        ...userData,
+        role: UserRole.VENDOR,
+      },
+    });
+
+    const createdVendor = await txClient.vendor.create({
+      data: {
+        userId: createUser.id,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    return createdVendor;
+  });
+
+  return result;
+};
+
+const createCustomerIntoDB = async (payload: TRegisterCustomer) => {
+  const { email, phone, password } = payload;
+
+  const existingUser = await prisma.user.findFirst({
+    where: {
+      OR: [{ email: email || undefined }, { phone: phone }],
+    },
+  });
+
+  if (existingUser) {
+    throw new ApiError(
+      httpStatus.CONFLICT,
+      "Your phone or email already exists."
+    );
+  }
+
+  const userData = {
+    email: email.toLowerCase(),
+    phone,
+    password: await hashedPassword(password),
+  };
+
+  const result = await prisma.$transaction(async (txClient) => {
+    const createUser = await txClient.user.create({
+      data: userData,
+    });
+
+    const createdCustomer = await txClient.customer.create({
+      data: {
+        userId: createUser.id,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    return createdCustomer;
   });
 
   return result;
@@ -47,4 +149,6 @@ const createAdminIntoDB = async (file: TFile | undefined, payload: any) => {
 
 export const UserService = {
   createAdminIntoDB,
+  createVendorIntoDB,
+  createCustomerIntoDB,
 };
