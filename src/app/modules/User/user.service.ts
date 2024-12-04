@@ -162,8 +162,6 @@ const getAllUserFromDB = async (
   const pagination = queryBuilder.getPagination();
   const sorting = queryBuilder.getSorting();
 
-  console.log(sorting);
-
   const result = await prisma.user.findMany({
     where: whereConditions,
     ...pagination,
