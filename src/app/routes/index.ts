@@ -69,12 +69,12 @@ const moduleRoutes = [
     route: OrderRoutes,
   },
   {
-    path: "/reviews",
-    route: ReviewRoutes,
-  },
-  {
     path: "/payments",
     route: PaymentRoutes,
+  },
+  {
+    path: "/reviews",
+    route: ReviewRoutes,
   },
   {
     path: "/discounts",

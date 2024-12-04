@@ -8,7 +8,7 @@ const getAllCart = catchAsync(async (req: Request, res: Response) => {
   apiResponse(res, {
     statusCode: httpStatus.CREATED,
     success: true,
-    message: "All cartes retrieved successfully.",
+    message: "All carts retrieved successfully.",
     meta: result.meta,
     data: result.data,
   });
