@@ -1,6 +1,11 @@
 import { Secret } from "jsonwebtoken";
 import config from "../../../config";
-import { comparePassword, jwtSecure } from "../../../helpers";
+import {
+  comparePassword,
+  hashedPassword,
+  jwtSecure,
+  sendEmail,
+} from "../../../helpers";
 import { httpStatus, prisma } from "../../../shared";
 import ApiError from "../../errors/ApiError";
 import { TLogin } from "./auth.interface";
@@ -50,7 +55,7 @@ const loginUserFromDB = async (payload: TLogin) => {
       throw new ApiError(httpStatus.FORBIDDEN, "Forbidden.");
   }
 
-  const tokenPayload = {
+  const jwtPayload = {
     id: user.id,
     fullName: profileInfo?.fullName,
     email: user.email,
@@ -61,13 +66,13 @@ const loginUserFromDB = async (payload: TLogin) => {
   };
 
   const accessToken = jwtSecure.generateToken(
-    tokenPayload,
+    jwtPayload,
     config.jwt.access_secret as Secret,
     config.jwt.access_expires_in as string
   );
 
   const refreshToken = jwtSecure.generateToken(
-    tokenPayload,
+    jwtPayload,
     config.jwt.refresh_secret as Secret,
     config.jwt.refresh_expires_in as string
   );
@@ -79,10 +84,12 @@ const loginUserFromDB = async (payload: TLogin) => {
 };
 
 const refreshTokenFromCookies = async (token: string) => {
-  let decoded;
-  try {
-    decoded = jwtHelper.verifyToken(token, config.jwt.refresh_secret as Secret);
-  } catch (error) {
+  const decoded = jwtSecure.verifyToken(
+    token,
+    config.jwt.refresh_secret as Secret
+  );
+
+  if (!decoded) {
     throw new ApiError(httpStatus.UNAUTHORIZED, "Your are not authorized.");
   }
 
@@ -93,22 +100,54 @@ const refreshTokenFromCookies = async (token: string) => {
     },
   });
 
-  const tokenPayload = {
+  let profileInfo;
+
+  switch (user.role) {
+    case UserRole.CUSTOMER:
+      profileInfo = await prisma.customer.findUnique({
+        where: { userId: user.id },
+      });
+      break;
+
+    case UserRole.VENDOR:
+      profileInfo = await prisma.vendor.findUnique({
+        where: { userId: user.id },
+      });
+      break;
+
+    case UserRole.SUPER_ADMIN:
+      profileInfo = await prisma.admin.findUnique({
+        where: { userId: user.id },
+      });
+      break;
+
+    case UserRole.ADMIN:
+      profileInfo = await prisma.admin.findUnique({
+        where: { userId: user.id },
+      });
+      break;
+
+    default:
+      throw new ApiError(httpStatus.FORBIDDEN, "Forbidden.");
+  }
+
+  const jwtPayload = {
+    id: user.id,
+    fullName: profileInfo?.fullName,
     email: user.email,
     phone: user.phone,
     role: user.role,
+    status: user.status,
+    avatar: profileInfo?.avatar,
   };
 
-  const accessToken = jwtHelper.generateToken(
-    tokenPayload,
+  const accessToken = jwtSecure.generateToken(
+    jwtPayload,
     config.jwt.access_secret as Secret,
     config.jwt.access_expires_in as string
   );
 
-  return {
-    accessToken,
-    needPasswordChange: user.needPasswordChange,
-  };
+  return { accessToken };
 };
 
 const changePasswordIntoDB = async (user: any, payload: any) => {
@@ -116,37 +155,34 @@ const changePasswordIntoDB = async (user: any, payload: any) => {
 
   const userData = await prisma.user.findUniqueOrThrow({
     where: {
-      email: user.email,
+      id: user.id,
     },
   });
 
-  const isCorrectPassword: boolean = await bcrypt.compare(
-    oldPassword,
-    userData.password
-  );
-
-  if (!isCorrectPassword) {
+  if (!(await comparePassword(oldPassword, userData.password))) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Password incorrect.");
   }
 
-  const hashedPassword: string = await bcrypt.hash(
-    newPassword,
-    Number(config.bcrypt.salt_rounds)
-  );
+  if (await comparePassword(newPassword, userData.password)) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "You cannot reuse your previous password. Please choose a new password."
+    );
+  }
 
-  await prisma.user.update({
+  const updateNewPassword = await prisma.user.update({
     where: {
-      email: user.email,
+      id: user.id,
     },
     data: {
-      password: hashedPassword,
-      needPasswordChange: false,
+      password: await hashedPassword(newPassword),
+      passwordChangedAt: new Date().toISOString(),
     },
   });
 
-  return {
-    message: "Password changed successfully.",
-  };
+  if (!updateNewPassword) {
+    throw new ApiError(httpStatus.NOT_MODIFIED, "Somethings went wrong.");
+  }
 };
 
 const forgetPassword = async (payload: { email: string }) => {
@@ -159,7 +195,7 @@ const forgetPassword = async (payload: { email: string }) => {
     },
   });
 
-  const resetPasswordToken = jwtHelper.generateToken(
+  const resetPasswordToken = jwtSecure.generateToken(
     {
       email: userData.email,
       role: userData.role,
@@ -172,13 +208,14 @@ const forgetPassword = async (payload: { email: string }) => {
   const resetPassLink = `${config.resetPassLink}?userId=${userData.id}&token=${resetPasswordToken}`;
 
   await sendEmail(
-    userData.email,
+    email,
+    "Your reset password link validate 5 minutes",
     `<div>
       <p>Dear User,</p>
         <p>Your Reset Password Link: </p>
         <a href=${resetPassLink}>
         <button>
-        Reset Password
+          Reset Password
         </button>
       </a>
     </div>`
@@ -196,7 +233,7 @@ const resetPassword = async (
     },
   });
 
-  const isValidToken = jwtHelper.verifyToken(
+  const isValidToken = jwtSecure.verifyToken(
     token,
     config.jwt.reset_password_secret as Secret
   );
@@ -205,19 +242,14 @@ const resetPassword = async (
     throw new ApiError(httpStatus.FORBIDDEN, "Forbidden.");
   }
 
-  const hashedPassword: string = await bcrypt.hash(
-    payload.password,
-    Number(config.bcrypt.salt_rounds)
-  );
-
   await prisma.user.update({
     where: {
       id: payload.id,
       status: "ACTIVE",
     },
     data: {
-      password: hashedPassword,
-      needPasswordChange: false,
+      password: await hashedPassword(payload.password),
+      passwordChangedAt: new Date().toISOString(),
     },
   });
 

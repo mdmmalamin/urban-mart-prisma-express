@@ -10,7 +10,7 @@ const seedSuperAdmin = async () => {
     password: await hashedPassword(config.superAdmin.password as string),
     role: UserRole.SUPER_ADMIN,
     status: UserStatus.ACTIVE,
-    passwordChangedAt: new Date(),
+    passwordChangedAt: new Date().toISOString(),
   };
 
   //? when database is connected, we will check is there any user who is super admin

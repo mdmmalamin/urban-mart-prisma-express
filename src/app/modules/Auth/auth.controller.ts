@@ -42,7 +42,8 @@ const changePassword = catchAsync(
     apiResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "Password changed successfully.",
+      message:
+        "Your password has been changed successfully. Please log in again to continue.",
       data: result,
     });
   }
@@ -54,7 +55,7 @@ const forgetPassword = catchAsync(async (req: Request, res: Response) => {
   apiResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "Your email verified.",
+    message: "Your email verification link send.",
     data: result,
   });
 });

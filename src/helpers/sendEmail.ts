@@ -21,7 +21,7 @@ export const sendEmail = async (
 
   //? send mail with defined transport object
   const info = await transporter.sendMail({
-    from: `"Healthcare MS" <${config.sendEmail.email}>`, //? sender address
+    from: `"Urban Mart" <${config.sendEmail.email}>`, //? sender address
     to: email,
     subject: subject,
     html: html,
