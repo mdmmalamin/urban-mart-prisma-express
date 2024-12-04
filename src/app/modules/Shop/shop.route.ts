@@ -1,14 +1,14 @@
 import express from "express";
 import { auth } from "../../middlewares";
 import { UserRole } from "@prisma/client";
-import { CustomerController } from "./customer.controller";
+import { ShopController } from "./shop.controller";
 
 const router = express.Router();
 
 router.get(
   "/",
   auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
-  CustomerController.getAllCustomer
+  ShopController.getAllShop
 );
 
-export const CustomerRoutes = router;
+export const ShopRoutes = router;
