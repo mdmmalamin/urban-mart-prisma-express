@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { apiResponse, catchAsync, httpStatus } from "../../../shared";
 import { AuthService } from "./auth.server";
 import config from "../../../config";
+import { TAuthUser } from "../../interfaces";
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
   const result = await AuthService.loginUserFromDB(req.body);
@@ -36,7 +37,7 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
 });
 
 const changePassword = catchAsync(
-  async (req: Request & { user?: any }, res: Response) => {
+  async (req: Request & { user?: TAuthUser }, res: Response) => {
     const result = await AuthService.changePasswordIntoDB(req.user, req.body);
 
     apiResponse(res, {
@@ -72,10 +73,30 @@ const resetPassword = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const changeEmail = catchAsync(
+  async (req: Request & { user?: TAuthUser }, res: Response) => {
+    const user = req.user;
+    const { email } = req.body;
+
+    const result = await AuthService.changeEmailIntoDB(
+      user as TAuthUser,
+      email
+    );
+
+    apiResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "My email changed successfully.",
+      data: result,
+    });
+  }
+);
+
 export const AuthController = {
   loginUser,
   refreshToken,
   changePassword,
   forgetPassword,
   resetPassword,
+  changeEmail,
 };

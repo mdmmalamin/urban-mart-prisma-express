@@ -10,6 +10,7 @@ import { httpStatus, prisma } from "../../../shared";
 import ApiError from "../../errors/ApiError";
 import { TLogin } from "./auth.interface";
 import { UserRole } from "@prisma/client";
+import { TAuthUser } from "../../interfaces";
 
 const loginUserFromDB = async (payload: TLogin) => {
   const { phone, password } = payload;
@@ -258,10 +259,20 @@ const resetPassword = async (
   };
 };
 
+const changeEmailIntoDB = async (user: TAuthUser, email: string) => {
+  await prisma.user.findUniqueOrThrow({ where: { id: user?.id } });
+
+  return await prisma.user.update({
+    where: { id: user?.id },
+    data: { email },
+  });
+};
+
 export const AuthService = {
   loginUserFromDB,
   refreshTokenFromCookies,
   changePasswordIntoDB,
   forgetPassword,
   resetPassword,
+  changeEmailIntoDB,
 };

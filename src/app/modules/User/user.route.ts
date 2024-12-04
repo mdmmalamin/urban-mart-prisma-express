@@ -27,4 +27,27 @@ router.post(
   UserController.createCustomer
 );
 
+router.get(
+  "/",
+  auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  UserController.getAllUser
+);
+
+router.post(
+  "/:id/status",
+  auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  UserController.changeUserStatus
+);
+
+router.get(
+  "/my-profile",
+  auth(
+    UserRole.CUSTOMER,
+    UserRole.VENDOR,
+    UserRole.ADMIN,
+    UserRole.SUPER_ADMIN
+  ),
+  UserController.getMyProfile
+);
+
 export const UserRoute = router;

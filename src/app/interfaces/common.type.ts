@@ -11,3 +11,8 @@ export type TAuthUser = {
   iat: number;
   exp: number;
 } | null;
+
+export type TQueryReturn = {
+  meta: { page: number; limit: number; total: number };
+  data: any[];
+};

@@ -1,6 +1,6 @@
 import { fileUploader } from "../../../helpers";
-import { TFile } from "../../interfaces";
-import { UserRole } from "@prisma/client";
+import { TAuthUser, TFile, TQueryReturn } from "../../interfaces";
+import { Prisma, UserRole, UserStatus } from "@prisma/client";
 import { httpStatus, prisma } from "../../../shared";
 import {
   TCreateAdmin,
@@ -9,6 +9,8 @@ import {
 } from "./user.interface";
 import { hashedPassword } from "../../../helpers";
 import ApiError from "../../errors/ApiError";
+import QueryBuilder from "../../builder/QueryBuilder";
+import { userSearchableFields } from "./user.constant";
 
 const createAdminIntoDB = async (
   file: TFile | undefined,
@@ -147,8 +149,133 @@ const createCustomerIntoDB = async (payload: TRegisterCustomer) => {
   return result;
 };
 
+const getAllUserFromDB = async (
+  query: Record<string, any>
+): Promise<TQueryReturn> => {
+  const queryBuilder = new QueryBuilder<Prisma.UserWhereInput>(query)
+    .addSearchCondition(userSearchableFields)
+    .addFilterConditions()
+    .setPagination()
+    .setSorting();
+
+  const whereConditions = queryBuilder.buildWhere();
+  const pagination = queryBuilder.getPagination();
+  const sorting = queryBuilder.getSorting();
+
+  console.log(sorting);
+
+  const result = await prisma.user.findMany({
+    where: whereConditions,
+    ...pagination,
+    orderBy: sorting,
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
+      passwordChangedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      admin: true,
+      vendor: true,
+      customer: true,
+    },
+  });
+
+  const total = await prisma.user.count({
+    where: whereConditions,
+  });
+
+  return {
+    meta: {
+      page: queryBuilder.paginationOptions.page,
+      limit: queryBuilder.paginationOptions.limit,
+      total,
+    },
+    data: result,
+  };
+};
+
+const changeUserStatusIntoDB = async (
+  id: string,
+  payload: { status: UserStatus }
+) => {
+  await prisma.user.findUniqueOrThrow({ where: { id } });
+
+  return await prisma.user.update({
+    where: { id },
+    data: payload,
+  });
+};
+
+const getMyProfileFromDB = async (user: TAuthUser) => {
+  const userInfo = await prisma.user.findUniqueOrThrow({
+    where: {
+      id: user?.id,
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
+      passwordChangedAt: true,
+    },
+  });
+
+  let profileInfo;
+
+  switch (user?.role) {
+    case UserRole.CUSTOMER:
+      profileInfo = await prisma.customer.findUnique({
+        where: {
+          userId: user.id,
+        },
+      });
+      break;
+
+    case UserRole.VENDOR:
+      profileInfo = await prisma.vendor.findUnique({
+        where: {
+          userId: user.id,
+        },
+      });
+      break;
+
+    case UserRole.ADMIN:
+      profileInfo = await prisma.admin.findUnique({
+        where: {
+          userId: user.id,
+        },
+      });
+      break;
+
+    case UserRole.SUPER_ADMIN:
+      profileInfo = await prisma.admin.findUnique({
+        where: {
+          userId: user.id,
+        },
+      });
+      break;
+
+    default:
+      throw new ApiError(httpStatus.FORBIDDEN, "Forbidden.");
+  }
+
+  return {
+    ...userInfo,
+    ...profileInfo,
+  };
+};
+
 export const UserService = {
   createAdminIntoDB,
   createVendorIntoDB,
   createCustomerIntoDB,
+
+  getAllUserFromDB,
+  changeUserStatusIntoDB,
+  getMyProfileFromDB,
 };

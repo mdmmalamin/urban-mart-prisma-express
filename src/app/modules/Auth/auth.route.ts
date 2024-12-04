@@ -24,4 +24,15 @@ router.post("/forget-password", AuthController.forgetPassword);
 
 router.post("/reset-password", AuthController.resetPassword);
 
+router.post(
+  "/change-email",
+  auth(
+    UserRole.SUPER_ADMIN,
+    UserRole.ADMIN,
+    UserRole.VENDOR,
+    UserRole.CUSTOMER
+  ),
+  AuthController.changeEmail
+);
+
 export const AuthRoutes = router;

@@ -34,8 +34,6 @@ export const auth = (...requiredRoles: UserRole[]) => {
         throw new ApiError(httpStatus.FORBIDDEN, "This user is suspended.");
       }
 
-      console.log(userData);
-
       if (
         userData.passwordChangedAt &&
         jwtSecure.isJWTIssuedBeforePasswordChanged(
@@ -54,6 +52,7 @@ export const auth = (...requiredRoles: UserRole[]) => {
       }
 
       req.user = decoded;
+
       next();
     }
   );

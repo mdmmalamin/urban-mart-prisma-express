@@ -9,7 +9,7 @@ datasource db {
 
 model User {
   id                String     @id @default(uuid())
-  email             String?    @unique
+  email             String     @unique
   phone             String     @unique
   password          String
   role              UserRole   @default(CUSTOMER)
@@ -78,13 +78,13 @@ model Customer {
 }
 
 model Shop {
-  id          String  @id @default(uuid())
-  vendorId    String  @unique
+  id          String     @id @default(uuid())
+  vendorId    String     @unique
   name        String
   logo        String?
   coverImage  String?
   description String?
-  isDeleted   Boolean @default(false)
+  status      ShopStatus @default(ACTIVE)
 
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -205,6 +205,13 @@ enum UserRole {
 enum UserStatus {
   ACTIVE
   SUSPENDED
+  DELETED
+}
+
+enum ShopStatus {
+  ACTIVE
+  INACTIVE
+  BLACKLISTED
   DELETED
 }
 
