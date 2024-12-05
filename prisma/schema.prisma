@@ -132,10 +132,10 @@ model Category {
 }
 
 model Inventory {
-  id                String @id @default(uuid())
+  id                String  @id @default(uuid())
   shopId            String
-  sku               String @unique
-  availableQuantity Int    @default(0)
+  sku               String? @unique
+  availableQuantity Int?    @default(0)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -171,16 +171,16 @@ model Product {
   price       Float         @default(0)
   status      ProductStatus @default(DRAFTED)
 
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  images    ProductImage[]
-  category  Category       @relation(fields: [categoryId], references: [id])
-  inventory Inventory      @relation(fields: [inventoryId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  images    Image[]
+  category  Category  @relation(fields: [categoryId], references: [id])
+  inventory Inventory @relation(fields: [inventoryId], references: [id])
 
   @@map("products")
 }
 
-model ProductImage {
+model Image {
   id        String  @id @default(uuid())
   productId String
   url       String  @unique
@@ -191,7 +191,7 @@ model ProductImage {
 
   product Product @relation(fields: [productId], references: [id])
 
-  @@map("productImages")
+  @@map("images")
 }
 
 enum UserRole {

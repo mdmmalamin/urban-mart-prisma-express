@@ -57,7 +57,12 @@ const uploadToCloudinary = async (
   });
 };
 
+const folderName = (name: string) => {
+  return name.split(" ").join("_") + "_" + Date.now();
+};
+
 export const fileUploader = {
   upload,
   uploadToCloudinary,
+  folderName,
 };
