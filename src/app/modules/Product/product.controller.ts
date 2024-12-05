@@ -15,13 +15,22 @@ const getAllProduct = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getProduct = catchAsync(async (req: Request, res: Response) => {
+  const result = await ProductService.getProductFromDB(req.params.id);
+
+  apiResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `${result.name.toLocaleUpperCase()} data retrieved successfully.`,
+    data: result,
+  });
+});
+
 const createProduct = catchAsync(
   async (req: Request & { user?: TAuthUser }, res: Response) => {
     const user = req.user;
     const files = req.files;
     const data = req.body;
-
-    console.log(user, files, data);
 
     const result = await ProductService.createProductIntoDB(
       user as TAuthUser,
@@ -38,7 +47,51 @@ const createProduct = catchAsync(
   }
 );
 
+const duplicateProduct = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const result = await ProductService.duplicateProductIntoDB(id);
+
+  apiResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Duplicate product created successfully.",
+    data: result,
+  });
+});
+
+const updateProduct = catchAsync(async (req: Request, res: Response) => {
+  const result = await ProductService.updateProductIntoDB(
+    req.params.id,
+    req.body
+  );
+
+  apiResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: `${result.name.toUpperCase()} was updated successfully.`,
+    data: result,
+  });
+});
+
+const StatusChange = catchAsync(async (req: Request, res: Response) => {
+  const result = await ProductService.StatusChangeIntoDB(
+    req.params.id,
+    req.body
+  );
+
+  apiResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: `The product status '${req.body.status}' has been updated successfully.`,
+    data: result,
+  });
+});
+
 export const ProductController = {
   getAllProduct,
+  getProduct,
   createProduct,
+  duplicateProduct,
+  updateProduct,
+  StatusChange,
 };

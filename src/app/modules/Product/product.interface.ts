@@ -9,3 +9,10 @@ export type TCreateProduct = {
 
   quantity?: 0;
 };
+
+export type TUpdateProduct = {
+  categoryId: string;
+  name: string;
+  description: string;
+  price: number;
+};

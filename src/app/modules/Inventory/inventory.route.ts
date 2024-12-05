@@ -11,4 +11,6 @@ router.get(
   InventoryController.getAllInventory
 );
 
+router.patch("/:id", auth(UserRole.VENDOR), InventoryController.updateQuantity);
+
 export const InventoryRoutes = router;

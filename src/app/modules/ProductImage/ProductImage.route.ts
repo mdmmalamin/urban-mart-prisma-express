@@ -1,21 +1,17 @@
 import express from "express";
 import { auth } from "../../middlewares";
 import { UserRole } from "@prisma/client";
-import { ShopController } from "./shop.controller";
+import { ProductImageController } from "./ProductImage.controller";
 import { fileUploader, formDataParser } from "../../../helpers";
 
 const router = express.Router();
 
-router.get("/", ShopController.getAllShop);
-
-router.get("/:id", ShopController.getShop);
-
-router.post(
-  "/",
+router.patch(
+  "/:id",
   auth(UserRole.VENDOR),
-  fileUploader.upload.single("logo"),
+  fileUploader.upload.array("images"),
   formDataParser,
-  ShopController.createShop
+  ProductImageController.updateImages
 );
 
-export const ShopRoutes = router;
+export const ProductImageRoutes = router;

@@ -1,17 +1,73 @@
-import { fileUploader, generateSku } from "../../../helpers";
+import { Prisma, ProductStatus } from "@prisma/client";
+import { fileUploader, generateFolder, generateSku } from "../../../helpers";
 import { httpStatus, prisma } from "../../../shared";
+import QueryBuilder from "../../builder/QueryBuilder";
 import ApiError from "../../errors/ApiError";
 import { TAuthUser, TFile } from "../../interfaces";
-import { TCreateProduct } from "./product.interface";
+import { TCreateProduct, TUpdateProduct } from "./product.interface";
+import {
+  FALLBACK_IMAGE_URL,
+  productSearchableFields,
+} from "./product.constant";
 
 const getAllProductFromDB = async (query: Record<string, any>) => {
+  const queryProducts = new QueryBuilder<Prisma.ProductWhereInput>(query)
+    .addSearchCondition(productSearchableFields)
+    .addFilterConditions()
+    .setPagination()
+    .setSorting();
+
+  const whereConditions = queryProducts.buildWhere();
+  const pagination = queryProducts.getPagination();
+  const sorting = queryProducts.getSorting();
+
+  const result = await prisma.product.findMany({
+    where: whereConditions,
+    ...pagination,
+    orderBy: sorting,
+    include: {
+      images: true,
+      category: true,
+      inventory: {
+        include: {
+          histories: true,
+        },
+      },
+    },
+  });
+
+  const total = await prisma.product.count({
+    where: whereConditions,
+  });
+
   return {
     meta: {
-      page: 1,
-      limit: 1,
-      total: 1,
+      page: queryProducts.paginationOptions.page,
+      limit: queryProducts.paginationOptions.limit,
+      total,
     },
-    data: "result",
+    data: result,
+  };
+};
+
+const getProductFromDB = async (id: string) => {
+  const result = await prisma.product.findUniqueOrThrow({
+    where: { id },
+
+    include: {
+      category: true,
+      images: true,
+      inventory: true,
+    },
+  });
+
+  return {
+    ...result,
+    quantity: result.inventory.availableQuantity as number,
+    stock:
+      (result.inventory.availableQuantity as number) > 0
+        ? "IN STOCK"
+        : "OUT OF STOCK",
   };
 };
 
@@ -39,34 +95,6 @@ const createProductIntoDB = async (
       id: payload.categoryId,
     },
   });
-
-  let productImages: string[];
-
-  if (files?.length) {
-    const uploadImages = await Promise.all(
-      files?.map(async (file, idx) => {
-        const fileName = `${fileUploader.folderName(payload?.name)}-${idx + 1}`;
-
-        //? Attempt to upload to Cloudinary
-        const { secure_url } = await fileUploader.uploadToCloudinary(
-          file,
-          fileName,
-          `product/${shopData.id}`
-        );
-
-        return secure_url;
-      })
-    );
-
-    productImages = uploadImages;
-
-    if (!uploadImages.length) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Failed to upload product images."
-      );
-    }
-  }
 
   const result = await prisma.$transaction(async (txClient) => {
     const createInventory = await txClient.inventory.create({
@@ -96,14 +124,158 @@ const createProductIntoDB = async (
       },
     });
 
-    const images = productImages?.map((item, idx) => ({
-      productId: createProduct.id,
-      url: item,
-      isPrimary: idx === 0 && true,
-    }));
+    if (files?.length) {
+      const uploadImages = await Promise.all(
+        files?.map(async (file, idx) => {
+          const fileName = `${fileUploader.imageName(payload?.name)}-${
+            idx + 1
+          }`;
 
-    await txClient.image.createMany({
-      data: images,
+          //? Attempt to upload to Cloudinary
+          const { secure_url } = await fileUploader.uploadToCloudinary(
+            file,
+            fileName,
+            `product/${await generateFolder(
+              shopData.name,
+              shopData.id
+            )}/${await generateFolder(createProduct.name, createProduct.id)}`
+          );
+
+          return secure_url;
+        })
+      );
+
+      const images = uploadImages?.map((item, idx) => ({
+        productId: createProduct.id,
+        url: item || FALLBACK_IMAGE_URL,
+        isPrimary: idx === 0 && true,
+      }));
+
+      if (!uploadImages.length) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "Failed to upload product images."
+        );
+      }
+
+      await txClient.image.createMany({
+        data: images,
+      });
+    }
+
+    await txClient.inventory.update({
+      where: { id: createInventory.id },
+      data: {
+        sku: await generateSku(
+          shopData.name,
+          categoryData.name,
+          createProduct.id
+        ),
+      },
+    });
+
+    return createProduct;
+  });
+
+  const newProduct = await prisma.product.findUnique({
+    where: { id: result.id },
+    include: {
+      category: true,
+      images: true,
+      inventory: {
+        include: {
+          histories: true,
+        },
+      },
+    },
+  });
+
+  return newProduct;
+};
+
+const duplicateProductIntoDB = async (id: string) => {
+  const productData = await prisma.product.findUniqueOrThrow({
+    where: { id },
+    include: {
+      category: true,
+      images: true,
+      inventory: true,
+    },
+  });
+
+  const shopData = await prisma.shop.findUniqueOrThrow({
+    where: { id: productData.inventory.shopId },
+  });
+
+  const categoryData = await prisma.category.findUniqueOrThrow({
+    where: { id: productData.categoryId },
+  });
+
+  const result = await prisma.$transaction(async (txClient) => {
+    const createInventory = await txClient.inventory.create({
+      data: {
+        shopId: productData.inventory.shopId,
+      },
+    });
+
+    await txClient.history.create({
+      data: {
+        inventoryId: createInventory.id,
+        note: `${productData.name} was duplicated to create this product.`,
+      },
+    });
+
+    const createProduct = await txClient.product.create({
+      data: {
+        categoryId: productData.categoryId,
+        inventoryId: createInventory.id,
+        name: productData.name,
+      },
+    });
+
+    // if (productData.images?.length) {
+    //   const images = productData.images?.map(async ({ url }, idx) => {
+    //     const originalFileName = await fileUploader.extractPublicId(url);
+
+    //     // `product/${await generateFolder(
+    //     //       shopData.name,
+    //     //       shopData.id
+    //     //     )}/${await generateFolder(createProduct.name, createProduct.id)}`
+
+    //     // urban-mart/product/WEI-39CB8B41/MAC-54F52C6E/
+    //     const newFileName = `urban-mart/product/${await generateFolder(
+    //       shopData.name,
+    //       shopData.id
+    //     )}/${await generateFolder(
+    //       createProduct.name,
+    //       createProduct.id
+    //     )}/${fileUploader.imageName(createProduct.name)}-${idx + 1}-copy`;
+
+    //     const { secure_url } = await fileUploader.duplicateToCloudinary(
+    //       originalFileName as string,
+    //       newFileName
+    //     );
+
+    //     console.log("secure_url", secure_url);
+
+    //     return {
+    //       productId: createProduct.id,
+    //       url: secure_url,
+    //       isPrimary: idx === 0 && true,
+    //     };
+    //   });
+
+    //   await txClient.image.createMany({
+    //     data: images as [],
+    //   });
+    // }
+
+    await txClient.image.create({
+      data: {
+        productId: createProduct.id,
+        url: FALLBACK_IMAGE_URL,
+        isPrimary: true,
+      },
     });
 
     await txClient.inventory.update({
@@ -120,7 +292,7 @@ const createProductIntoDB = async (
     return createProduct;
   });
 
-  const product = await prisma.product.findUnique({
+  const duplicateProduct = await prisma.product.findUnique({
     where: { id: result.id },
     include: {
       category: true,
@@ -133,10 +305,43 @@ const createProductIntoDB = async (
     },
   });
 
-  return product;
+  return duplicateProduct;
+};
+
+const updateProductIntoDB = async (id: string, payload: TUpdateProduct) => {
+  await prisma.product.findUniqueOrThrow({ where: { id } });
+
+  return await prisma.product.update({
+    where: { id },
+
+    data: payload,
+  });
+};
+
+const StatusChangeIntoDB = async (
+  id: string,
+  payload: { status: ProductStatus }
+) => {
+  const result = await prisma.product.update({
+    where: { id },
+    data: { status: payload.status },
+  });
+
+  if (!result) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `The provided status '${payload.status}' is invalid or there was an error processing the request.`
+    );
+  }
+
+  return result;
 };
 
 export const ProductService = {
   getAllProductFromDB,
+  getProductFromDB,
   createProductIntoDB,
+  duplicateProductIntoDB,
+  updateProductIntoDB,
+  StatusChangeIntoDB,
 };

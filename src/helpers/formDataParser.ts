@@ -5,7 +5,13 @@ export const formDataParser = (
   res: Response,
   next: NextFunction
 ) => {
-  req.body = JSON.parse(req.body.data);
+  if (req.body && req.body.data) {
+    try {
+      req.body = JSON.parse(req.body.data);
+    } catch (error: any) {
+      //? Proceed to the next middleware even if parsing fails
+    }
+  }
 
   next();
 };

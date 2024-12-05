@@ -14,6 +14,21 @@ const getAllInventory = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const updateQuantity = catchAsync(async (req: Request, res: Response) => {
+  const result = await InventoryService.updateQuantityIntoDB(
+    req.params.id,
+    req.body
+  );
+
+  apiResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: `Inventory quantity updated successfully by ${req.body.quantity}.`,
+    data: result,
+  });
+});
+
 export const InventoryController = {
   getAllInventory,
+  updateQuantity,
 };

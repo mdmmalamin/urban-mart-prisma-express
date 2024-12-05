@@ -15,6 +15,17 @@ const getAllShop = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getShop = catchAsync(async (req: Request, res: Response) => {
+  const result = await ShopService.getShopFromDB(req.params.id);
+
+  apiResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: `${result.name.toLocaleUpperCase()} shop data retrieved successfully.`,
+    data: result,
+  });
+});
+
 const createShop = catchAsync(
   async (req: Request & { user?: TAuthUser }, res: Response) => {
     const user = req.user;
@@ -37,5 +48,6 @@ const createShop = catchAsync(
 
 export const ShopController = {
   getAllShop,
+  getShop,
   createShop,
 };

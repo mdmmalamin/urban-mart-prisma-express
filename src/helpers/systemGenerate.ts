@@ -9,3 +9,13 @@ export const generateSku = async (
 
   return await `${vendorCode}-${categoryCode}-${productCode}`;
 };
+
+export const generateFolder = async (
+  name: string,
+  id: string
+): Promise<string> => {
+  const nameCode = name.slice(0, 3).toUpperCase(); //? First 3 letters of vendor name
+  const idCode = id.slice(0, 8).toUpperCase(); //? First 8 letters of product id
+
+  return await `${nameCode}-${idCode}`;
+};

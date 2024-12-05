@@ -1,17 +1,60 @@
+import { Prisma } from "@prisma/client";
 import { fileUploader } from "../../../helpers";
 import { httpStatus, prisma } from "../../../shared";
+import QueryBuilder from "../../builder/QueryBuilder";
 import ApiError from "../../errors/ApiError";
 import { TAuthUser, TFile } from "../../interfaces";
 
 const getAllShopFromDB = async (query: Record<string, any>) => {
+  const queryShops = new QueryBuilder<Prisma.ShopWhereInput>(query)
+    .addSearchCondition(["name"])
+    .addFilterConditions()
+    .setPagination()
+    .setSorting();
+
+  const whereConditions = queryShops.buildWhere();
+  const pagination = queryShops.getPagination();
+  const sorting = queryShops.getSorting();
+
+  const result = await prisma.shop.findMany({
+    where: whereConditions,
+    ...pagination,
+    orderBy: sorting,
+    include: {
+      inventory: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+
+  const total = await prisma.shop.count({
+    where: whereConditions,
+  });
+
   return {
     meta: {
-      page: 1,
-      limit: 1,
-      total: 1,
+      page: queryShops.paginationOptions.page,
+      limit: queryShops.paginationOptions.limit,
+      total,
     },
-    data: "result",
+    data: result,
   };
+};
+
+const getShopFromDB = async (id: string) => {
+  return await prisma.shop.findUniqueOrThrow({
+    where: { id },
+
+    include: {
+      inventory: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
 };
 
 const createShopIntoDB = async (
@@ -60,4 +103,5 @@ const createShopIntoDB = async (
 export const ShopService = {
   getAllShopFromDB,
   createShopIntoDB,
+  getShopFromDB,
 };

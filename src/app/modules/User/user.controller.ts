@@ -77,6 +77,21 @@ const getMyProfile = catchAsync(
   }
 );
 
+const getMyShop = catchAsync(
+  async (req: Request & { user?: TAuthUser }, res: Response) => {
+    const user = req.user;
+
+    const result = await UserService.getMyShopFromDB(user as TAuthUser);
+
+    apiResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "My shop data retrieved successfully.",
+      data: result,
+    });
+  }
+);
+
 export const UserController = {
   createAdmin,
   createVendor,
@@ -85,4 +100,5 @@ export const UserController = {
   getAllUser,
   changeUserStatus,
   getMyProfile,
+  getMyShop,
 };

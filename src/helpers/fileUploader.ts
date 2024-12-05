@@ -57,12 +57,42 @@ const uploadToCloudinary = async (
   });
 };
 
-const folderName = (name: string) => {
+//? Function to duplicate an image
+const duplicateToCloudinary = async ( //! This is beta version
+  originalFileName: string,
+  newFileName: string
+): Promise<TCloudinaryResponse | any> => {
+  try {
+    console.log("originalFileName: ", originalFileName);
+    console.log("newFileName: ", newFileName);
+    const result = await cloudinary.uploader.explicit(originalFileName, {
+      type: "upload",
+      public_id: newFileName,
+      overwrite: false, //? Ensures the original is not overwritten
+    });
+
+    console.log("Image duplicated successfully:", result);
+    return await result;
+  } catch (error) {
+    console.error("Error duplicating image:", error);
+  }
+};
+
+const imageName = (name: string) => {
   return name.split(" ").join("_") + "_" + Date.now();
+};
+
+const extractPublicId = async (url: string) => {
+  const regex = /image\/upload\/(?:v\d+\/)?(urban-mart\/product\/.+?)(?=\.\w+)/; //? Match everything after "image/upload/" starting with "urban-mart/product/"
+  const match = url.match(regex);
+  return (await match) ? match?.[1] : null; //? Return the matched path or null if not found
 };
 
 export const fileUploader = {
   upload,
   uploadToCloudinary,
-  folderName,
+  duplicateToCloudinary,
+
+  imageName,
+  extractPublicId,
 };

@@ -12,12 +12,28 @@ router.get(
   ProductController.getAllProduct
 );
 
+router.get("/:id", ProductController.getProduct);
+
 router.post(
   "/",
   auth(UserRole.VENDOR),
   fileUploader.upload.array("images"),
   formDataParser,
   ProductController.createProduct
+);
+
+router.post(
+  "/:id/duplicate",
+  auth(UserRole.VENDOR),
+  ProductController.duplicateProduct
+);
+
+router.patch("/:id", auth(UserRole.VENDOR), ProductController.updateProduct);
+
+router.patch(
+  "/:id/status",
+  auth(UserRole.VENDOR),
+  ProductController.StatusChange
 );
 
 export const ProductRoutes = router;

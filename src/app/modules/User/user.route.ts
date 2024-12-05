@@ -50,4 +50,6 @@ router.get(
   UserController.getMyProfile
 );
 
+router.get("/my-shop", auth(UserRole.VENDOR), UserController.getMyShop);
+
 export const UserRoute = router;

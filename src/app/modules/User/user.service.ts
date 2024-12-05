@@ -268,6 +268,26 @@ const getMyProfileFromDB = async (user: TAuthUser) => {
   };
 };
 
+const getMyShopFromDB = async (user: TAuthUser) => {
+  await prisma.user.findUniqueOrThrow({
+    where: {
+      id: user?.id,
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+
+  const vendorData = await prisma.vendor.findUniqueOrThrow({
+    where: { userId: user?.id },
+  });
+
+  return await prisma.shop.findUniqueOrThrow({
+    where: { vendorId: vendorData.id, status: { in: ["ACTIVE", "INACTIVE"] } },
+
+    include: { inventory: true, addresses: true },
+  });
+};
+
 export const UserService = {
   createAdminIntoDB,
   createVendorIntoDB,
@@ -276,4 +296,5 @@ export const UserService = {
   getAllUserFromDB,
   changeUserStatusIntoDB,
   getMyProfileFromDB,
+  getMyShopFromDB,
 };
