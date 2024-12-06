@@ -46,8 +46,23 @@ const createShop = catchAsync(
   }
 );
 
+const getMyShop = catchAsync(
+  async (req: Request & { user?: TAuthUser }, res: Response) => {
+    const result = await ShopService.getMyShopFormDB(req.user as TAuthUser);
+
+    apiResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: `My '${result.shop?.name}' shop retrieved successfully.`,
+      data: result,
+    });
+  }
+);
+
 export const ShopController = {
   getAllShop,
   getShop,
   createShop,
+
+  getMyShop,
 };

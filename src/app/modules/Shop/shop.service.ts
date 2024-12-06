@@ -17,7 +17,7 @@ const getAllShopFromDB = async (query: Record<string, any>) => {
   const sorting = queryShops.getSorting();
 
   const result = await prisma.shop.findMany({
-    where: whereConditions,
+    where: { ...whereConditions, status: "ACTIVE" },
     ...pagination,
     orderBy: sorting,
     include: {
@@ -45,7 +45,7 @@ const getAllShopFromDB = async (query: Record<string, any>) => {
 
 const getShopFromDB = async (id: string) => {
   return await prisma.shop.findUniqueOrThrow({
-    where: { id },
+    where: { id, status: "ACTIVE" },
 
     include: {
       inventory: {
@@ -100,8 +100,31 @@ const createShopIntoDB = async (
   return result;
 };
 
+const getMyShopFormDB = async (user: TAuthUser) => {
+  console.log(user);
+  return await prisma.vendor.findUniqueOrThrow({
+    where: { userId: user?.id },
+
+    include: {
+      shop: {
+        include: {
+          addresses: true,
+          inventory: {
+            include: {
+              product: true,
+              histories: true,
+            },
+          },
+        },
+      },
+    },
+  });
+};
+
 export const ShopService = {
   getAllShopFromDB,
   createShopIntoDB,
   getShopFromDB,
+
+  getMyShopFormDB,
 };

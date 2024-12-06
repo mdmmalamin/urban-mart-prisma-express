@@ -6,6 +6,8 @@ import { fileUploader, formDataParser } from "../../../helpers";
 
 const router = express.Router();
 
+router.get("/my-shop", auth(UserRole.VENDOR), ShopController.getMyShop);
+
 router.get("/", ShopController.getAllShop);
 
 router.get("/:id", ShopController.getShop);
