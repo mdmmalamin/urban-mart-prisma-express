@@ -7,7 +7,7 @@ const getAllShop = catchAsync(async (req: Request, res: Response) => {
   const result = await ShopService.getAllShopFromDB(req.query);
 
   apiResponse(res, {
-    statusCode: httpStatus.CREATED,
+    statusCode: httpStatus.OK,
     success: true,
     message: "All shops retrieved successfully.",
     meta: result.meta,
@@ -19,7 +19,7 @@ const getShop = catchAsync(async (req: Request, res: Response) => {
   const result = await ShopService.getShopFromDB(req.params.id);
 
   apiResponse(res, {
-    statusCode: httpStatus.CREATED,
+    statusCode: httpStatus.OK,
     success: true,
     message: `${result.name.toLocaleUpperCase()} shop data retrieved successfully.`,
     data: result,

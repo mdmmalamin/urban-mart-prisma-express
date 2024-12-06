@@ -11,4 +11,14 @@ router.get(
   CartController.getAllCart
 );
 
+router.post("/:id", auth(UserRole.CUSTOMER), CartController.addToCart);
+
+router.patch(
+  "/:id",
+  auth(UserRole.CUSTOMER),
+  CartController.changeCartItemQuantity
+);
+
+router.get("/my-carts", auth(UserRole.CUSTOMER), CartController.getMyCarts);
+
 export const CartRoutes = router;
