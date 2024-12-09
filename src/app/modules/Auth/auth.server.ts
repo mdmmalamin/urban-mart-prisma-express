@@ -225,9 +225,16 @@ const forgetPassword = async (payload: { email: string }) => {
 
 const resetPassword = async (
   token: string,
-  payload: { id: string; password: string }
+  payload: { id: string; password: string; confirmPassword: string }
 ) => {
-  const userData = await prisma.user.findFirstOrThrow({
+  if (payload.password !== payload.confirmPassword) {
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      "Passwords do not match. Please try again."
+    );
+  }
+
+  await prisma.user.findFirstOrThrow({
     where: {
       id: payload.id,
       status: "ACTIVE",
@@ -238,6 +245,8 @@ const resetPassword = async (
     token,
     config.jwt.reset_password_secret as Secret
   );
+
+  console.log(isValidToken);
 
   if (!isValidToken) {
     throw new ApiError(httpStatus.FORBIDDEN, "Forbidden.");

@@ -20,4 +20,10 @@ router.post(
   ShopController.createShop
 );
 
+router.patch(
+  "/:id/status",
+  auth(UserRole.SUPER_ADMIN, UserRole.ADMIN),
+  ShopController.changeShopStatus
+);
+
 export const ShopRoutes = router;

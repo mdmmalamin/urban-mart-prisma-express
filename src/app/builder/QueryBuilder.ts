@@ -21,6 +21,29 @@ class QueryBuilder<TWhereInput> {
     return this;
   }
 
+  // addFilterConditions(): this {
+  //   const queryObj = { ...this.query };
+  //   const excludeFields = [
+  //     "searchTerm",
+  //     "sortBy",
+  //     "sortOrder",
+  //     "limit",
+  //     "page",
+  //     "fields",
+  //   ];
+  //   excludeFields.forEach((el) => delete queryObj[el]);
+
+  //   if (Object.keys(queryObj).length > 0) {
+  //     this.andConditions.push({
+  //       AND: Object.keys(queryObj).map((key) => ({
+  //         [key]: { equals: queryObj[key] },
+  //       })),
+  //     } as TWhereInput);
+  //   }
+
+  //   return this;
+  // }
+
   addFilterConditions(): this {
     const queryObj = { ...this.query };
     const excludeFields = [
@@ -35,11 +58,16 @@ class QueryBuilder<TWhereInput> {
 
     if (Object.keys(queryObj).length > 0) {
       this.andConditions.push({
-        AND: Object.keys(queryObj).map((key) => ({
-          [key]: { equals: queryObj[key] },
-        })),
+        AND: Object.keys(queryObj).map((key) => {
+          //? Special handling for the "category" field
+          if (key === "category") {
+            return { category: { name: { equals: queryObj[key] } } };
+          }
+          return { [key]: { equals: queryObj[key] } };
+        }),
       } as TWhereInput);
     }
+
     return this;
   }
 

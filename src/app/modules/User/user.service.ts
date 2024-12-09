@@ -1,4 +1,4 @@
-import { fileUploader } from "../../../helpers";
+import { fileUploader, jwtSecure } from "../../../helpers";
 import { TAuthUser, TFile, TQueryReturn } from "../../interfaces";
 import { Prisma, UserRole, UserStatus } from "@prisma/client";
 import { httpStatus, prisma } from "../../../shared";
@@ -10,7 +10,14 @@ import {
 import { hashedPassword } from "../../../helpers";
 import ApiError from "../../errors/ApiError";
 import QueryBuilder from "../../builder/QueryBuilder";
-import { userSearchableFields } from "./user.constant";
+import {
+  FALLBACK_ADMIN,
+  FALLBACK_CUSTOMER,
+  FALLBACK_VENDOR,
+  userSearchableFields,
+} from "./user.constant";
+import config from "../../../config";
+import { Secret } from "jsonwebtoken";
 
 const createAdminIntoDB = async (
   file: TFile | undefined,
@@ -38,7 +45,7 @@ const createAdminIntoDB = async (
     fullName: payload.admin.fullName,
     gender: payload.admin.gender,
     dateOfBirth: payload.admin.dateOfBirth,
-    avatar: payload.admin.avatar,
+    avatar: payload.admin.avatar || FALLBACK_ADMIN,
   };
 
   const result = await prisma.$transaction(async (txClient) => {
@@ -63,7 +70,15 @@ const createAdminIntoDB = async (
 };
 
 const createVendorIntoDB = async (payload: TRegisterVendor) => {
-  const { email, phone, password } = payload;
+  const { fullName, dateOfBirth, gender, email, phone, password } = payload;
+
+  if (
+    [fullName, dateOfBirth, gender, email, phone, password].some(
+      (field) => field === ""
+    )
+  ) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "All fields are required");
+  }
 
   const existingUser = await prisma.user.findFirst({
     where: {
@@ -95,6 +110,10 @@ const createVendorIntoDB = async (payload: TRegisterVendor) => {
     const createdVendor = await txClient.vendor.create({
       data: {
         userId: createUser.id,
+        fullName,
+        gender,
+        dateOfBirth,
+        avatar: FALLBACK_VENDOR || null,
       },
       include: {
         user: true,
@@ -104,7 +123,32 @@ const createVendorIntoDB = async (payload: TRegisterVendor) => {
     return createdVendor;
   });
 
-  return result;
+  const jwtPayload = {
+    id: result.userId,
+    fullName: result.fullName,
+    email: result.user.email,
+    phone: result.user.phone,
+    role: result.user.role,
+    status: result.user.status,
+    avatar: result?.avatar,
+  };
+
+  const accessToken = jwtSecure.generateToken(
+    jwtPayload,
+    config.jwt.access_secret as Secret,
+    config.jwt.access_expires_in as string
+  );
+
+  const refreshToken = jwtSecure.generateToken(
+    jwtPayload,
+    config.jwt.refresh_secret as Secret,
+    config.jwt.refresh_expires_in as string
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+  };
 };
 
 const createCustomerIntoDB = async (payload: TRegisterCustomer) => {
@@ -137,6 +181,7 @@ const createCustomerIntoDB = async (payload: TRegisterCustomer) => {
     const createdCustomer = await txClient.customer.create({
       data: {
         userId: createUser.id,
+        avatar: FALLBACK_CUSTOMER || null,
       },
       include: {
         user: true,
@@ -146,7 +191,32 @@ const createCustomerIntoDB = async (payload: TRegisterCustomer) => {
     return createdCustomer;
   });
 
-  return result;
+  const jwtPayload = {
+    id: result.userId,
+    fullName: result.fullName,
+    email: result.user.email,
+    phone: result.user.phone,
+    role: result.user.role,
+    status: result.user.status,
+    avatar: result?.avatar,
+  };
+
+  const accessToken = jwtSecure.generateToken(
+    jwtPayload,
+    config.jwt.access_secret as Secret,
+    config.jwt.access_expires_in as string
+  );
+
+  const refreshToken = jwtSecure.generateToken(
+    jwtPayload,
+    config.jwt.refresh_secret as Secret,
+    config.jwt.refresh_expires_in as string
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+  };
 };
 
 const getAllUserFromDB = async (

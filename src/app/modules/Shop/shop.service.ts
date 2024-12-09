@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, ShopStatus } from "@prisma/client";
 import { fileUploader } from "../../../helpers";
 import { httpStatus, prisma } from "../../../shared";
 import QueryBuilder from "../../builder/QueryBuilder";
@@ -101,23 +101,29 @@ const createShopIntoDB = async (
 };
 
 const getMyShopFormDB = async (user: TAuthUser) => {
-  console.log(user);
-  return await prisma.vendor.findUniqueOrThrow({
+  const vendorData = await prisma.vendor.findUniqueOrThrow({
     where: { userId: user?.id },
+  });
 
-    include: {
-      shop: {
-        include: {
-          addresses: true,
-          inventory: {
-            include: {
-              product: true,
-              histories: true,
-            },
-          },
-        },
-      },
-    },
+  const result = await prisma.shop.findUnique({
+    where: { vendorId: vendorData?.id },
+  });
+
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No shop created.");
+  }
+
+  return result;
+};
+
+const changeShopStatusIntoDB = async (
+  id: string,
+  payload: { status: ShopStatus }
+) => {
+  return await prisma.shop.update({
+    where: { id },
+
+    data: payload,
   });
 };
 
@@ -127,4 +133,5 @@ export const ShopService = {
   getShopFromDB,
 
   getMyShopFormDB,
+  changeShopStatusIntoDB,
 };

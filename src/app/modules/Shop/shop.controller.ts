@@ -59,10 +59,25 @@ const getMyShop = catchAsync(
   }
 );
 
+const changeShopStatus = catchAsync(async (req: Request, res: Response) => {
+  const result = await ShopService.changeShopStatusIntoDB(
+    req.params.id,
+    req.body
+  );
+
+  apiResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `'${result.name}' shop status changed successfully.`,
+    data: result,
+  });
+});
+
 export const ShopController = {
   getAllShop,
   getShop,
   createShop,
 
   getMyShop,
+  changeShopStatus,
 };

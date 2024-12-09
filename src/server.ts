@@ -3,7 +3,7 @@ import app from "./app";
 import config from "./config";
 import seedSuperAdmin from "./app/DB";
 
-const port = config.port || 3000;
+const port = config.port || 5000;
 
 let server: Server;
 

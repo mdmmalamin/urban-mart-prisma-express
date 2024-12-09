@@ -2,6 +2,7 @@ import { Prisma, StockAction } from "@prisma/client";
 import { httpStatus, prisma } from "../../../shared";
 import QueryBuilder from "../../builder/QueryBuilder";
 import ApiError from "../../errors/ApiError";
+import { TAuthUser } from "../../interfaces";
 
 const getAllInventoryFromDB = async (query: Record<string, any>) => {
   const queryInventories = new QueryBuilder<Prisma.InventoryWhereInput>(query)
@@ -116,7 +117,37 @@ const updateQuantityIntoDB = async (
   return result;
 };
 
+const getMyInventoriesFromDB = async (user: TAuthUser) => {
+  const vendorData = await prisma.vendor.findUniqueOrThrow({
+    where: { userId: user?.id },
+  });
+
+  const shopData = await prisma.shop.findUnique({
+    where: { vendorId: vendorData?.id },
+  });
+
+  if (!shopData) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No shop created.");
+  }
+
+  const result = await prisma.inventory.findMany({
+    where: { shopId: shopData.id },
+
+    include: {
+      product: true,
+    },
+  });
+
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No inventory found.");
+  }
+
+  return result;
+};
+
 export const InventoryService = {
   getAllInventoryFromDB,
   updateQuantityIntoDB,
+
+  getMyInventoriesFromDB,
 };

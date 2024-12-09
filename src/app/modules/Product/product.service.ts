@@ -17,12 +17,18 @@ const getAllProductFromDB = async (query: Record<string, any>) => {
     .setPagination()
     .setSorting();
 
+  // doctor > doctorSpecialties > specialties -> title
+  // product > category --> name
+
   const whereConditions = queryProducts.buildWhere();
   const pagination = queryProducts.getPagination();
   const sorting = queryProducts.getSorting();
 
   const result = await prisma.product.findMany({
-    where: whereConditions,
+    where: {
+      ...whereConditions,
+      status: "PUBLISHED",
+    },
     ...pagination,
     orderBy: sorting,
     include: {
@@ -37,7 +43,10 @@ const getAllProductFromDB = async (query: Record<string, any>) => {
   });
 
   const total = await prisma.product.count({
-    where: whereConditions,
+    where: {
+      ...whereConditions,
+      status: "PUBLISHED",
+    },
   });
 
   return {
@@ -57,7 +66,11 @@ const getProductFromDB = async (id: string) => {
     include: {
       category: true,
       images: true,
-      inventory: true,
+      inventory: {
+        include: {
+          shop: true,
+        },
+      },
     },
   });
 

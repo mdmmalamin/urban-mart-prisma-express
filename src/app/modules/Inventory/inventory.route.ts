@@ -13,4 +13,10 @@ router.get(
 
 router.patch("/:id", auth(UserRole.VENDOR), InventoryController.updateQuantity);
 
+router.get(
+  "/my-inventories",
+  auth(UserRole.VENDOR),
+  InventoryController.getMyInventories
+);
+
 export const InventoryRoutes = router;

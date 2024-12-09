@@ -13,6 +13,9 @@ export type TCreateAdmin = {
 };
 
 export type TRegisterVendor = {
+  fullName: string;
+  dateOfBirth: Date;
+  gender: Gender;
   email: string;
   phone: string;
   password: string;
