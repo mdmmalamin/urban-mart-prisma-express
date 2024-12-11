@@ -53,7 +53,7 @@ const getMyShop = catchAsync(
     apiResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: `My '${result.shop?.name}' shop retrieved successfully.`,
+      message: `My '${result?.name}' shop retrieved successfully.`,
       data: result,
     });
   }

@@ -44,6 +44,33 @@ class QueryBuilder<TWhereInput> {
   //   return this;
   // }
 
+  // addFilterConditions(): this {
+  //   const queryObj = { ...this.query };
+  //   const excludeFields = [
+  //     "searchTerm",
+  //     "sortBy",
+  //     "sortOrder",
+  //     "limit",
+  //     "page",
+  //     "fields",
+  //   ];
+  //   excludeFields.forEach((el) => delete queryObj[el]);
+
+  //   if (Object.keys(queryObj).length > 0) {
+  //     this.andConditions.push({
+  //       AND: Object.keys(queryObj).map((key) => {
+  //         //? Special handling for the "category" field
+  //         if (key === "category") {
+  //           return { category: { name: { equals: queryObj[key] } } };
+  //         }
+  //         return { [key]: { equals: queryObj[key] } };
+  //       }),
+  //     } as TWhereInput);
+  //   }
+
+  //   return this;
+  // }
+
   addFilterConditions(): this {
     const queryObj = { ...this.query };
     const excludeFields = [
@@ -56,15 +83,33 @@ class QueryBuilder<TWhereInput> {
     ];
     excludeFields.forEach((el) => delete queryObj[el]);
 
+    //? Handle price range
+    const priceConditions: any[] = [];
+    if (queryObj.minPrice !== undefined) {
+      priceConditions.push({ price: { gte: parseFloat(queryObj.minPrice) } });
+      delete queryObj.minPrice; //? Remove after handling
+    }
+    if (queryObj.maxPrice !== undefined) {
+      priceConditions.push({ price: { lte: parseFloat(queryObj.maxPrice) } });
+      delete queryObj.maxPrice; //? Remove after handling
+    }
+
     if (Object.keys(queryObj).length > 0) {
       this.andConditions.push({
-        AND: Object.keys(queryObj).map((key) => {
-          //? Special handling for the "category" field
-          if (key === "category") {
-            return { category: { name: { equals: queryObj[key] } } };
-          }
-          return { [key]: { equals: queryObj[key] } };
-        }),
+        AND: [
+          ...Object.keys(queryObj).map((key) => {
+            if (key === "category") {
+              return { category: { name: { equals: queryObj[key] } } };
+            }
+            return { [key]: { equals: queryObj[key] } };
+          }),
+          ...priceConditions, //? Add the price range conditions
+        ],
+      } as TWhereInput);
+    } else if (priceConditions.length > 0) {
+      //? Only price conditions present
+      this.andConditions.push({
+        AND: priceConditions,
       } as TWhereInput);
     }
 

@@ -23,7 +23,11 @@ const getAllShopFromDB = async (query: Record<string, any>) => {
     include: {
       inventory: {
         include: {
-          product: true,
+          product: {
+            include: {
+              images: true,
+            },
+          },
         },
       },
     },
