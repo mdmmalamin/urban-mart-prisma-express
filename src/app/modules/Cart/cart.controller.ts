@@ -62,10 +62,27 @@ const getMyCarts = catchAsync(
   }
 );
 
+const deletedCartItem = catchAsync(
+  async (req: Request & { user?: TAuthUser }, res: Response) => {
+    const result = await CartService.deletedCartItemFromDB(
+      req.user as TAuthUser,
+      req.params.id
+    );
+
+    apiResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: `Your cart item deleted successfully.`,
+      data: result,
+    });
+  }
+);
+
 export const CartController = {
   getAllCart,
   addToCart,
   changeCartItemQuantity,
-  
+
   getMyCarts,
+  deletedCartItem,
 };

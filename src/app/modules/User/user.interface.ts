@@ -7,14 +7,14 @@ export type TCreateAdmin = {
     email: string;
     phone: string;
     gender: Gender;
-    dateOfBirth: Date;
+    dateOfBirth: string;
     avatar?: string;
   };
 };
 
 export type TRegisterVendor = {
   fullName: string;
-  dateOfBirth: Date;
+  dateOfBirth: string;
   gender: Gender;
   email: string;
   phone: string;

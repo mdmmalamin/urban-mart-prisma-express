@@ -21,4 +21,6 @@ router.patch(
 
 router.get("/my-carts", auth(UserRole.CUSTOMER), CartController.getMyCarts);
 
+router.delete("/:id", auth(UserRole.CUSTOMER), CartController.deletedCartItem);
+
 export const CartRoutes = router;

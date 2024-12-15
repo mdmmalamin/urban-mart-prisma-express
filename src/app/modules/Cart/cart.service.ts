@@ -27,6 +27,7 @@ const addToCartIntoDB = async (
   const productData = await prisma.product.findUniqueOrThrow({
     where: { id, status: "PUBLISHED" },
     include: {
+      inventory: true,
       cartItems: {
         include: {
           cart: true,
@@ -34,6 +35,10 @@ const addToCartIntoDB = async (
       },
     },
   });
+
+  if (productData.inventory.availableQuantity === 0) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Quantity not available.");
+  }
 
   if (customerData.cart && productData) {
     const cartItemExists = await prisma.cartItem.findUnique({
@@ -137,7 +142,25 @@ const changeCartItemQuantityIntoDB = async (
       },
     },
   });
-  // return myCart;
+
+  const inventoryLimit = await prisma.product.findUniqueOrThrow({
+    where: {
+      id,
+    },
+    select: {
+      inventory: true,
+    },
+  });
+
+  if (
+    payload?.quantity > (inventoryLimit?.inventory?.availableQuantity as number)
+  ) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Quantity Over.");
+  }
+
+  if (payload?.quantity === 0) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Minimum quantity 1.");
+  }
 
   const result = await prisma.$transaction(async (txClient) => {
     const updateCartItem = await txClient.cartItem.update({
@@ -191,7 +214,7 @@ const getMyCartsFromDB = async (user: TAuthUser) => {
     select: { id: true },
   });
 
-  const result = await prisma.cart.findUniqueOrThrow({
+  const result = await prisma.cart.findUnique({
     where: {
       customerId: customerData.id,
     },
@@ -200,11 +223,24 @@ const getMyCartsFromDB = async (user: TAuthUser) => {
       cartItems: {
         select: {
           quantity: true,
-          product: true,
+          product: {
+            include: {
+              inventory: true,
+              images: {
+                select: {
+                  url: true,
+                },
+              },
+            },
+          },
         },
       },
     },
   });
+
+  if (!result) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No cart available.");
+  }
 
   const cartItems = result.cartItems?.map(({ quantity, product }) => ({
     quantity,
@@ -219,10 +255,88 @@ const getMyCartsFromDB = async (user: TAuthUser) => {
   };
 };
 
+const deletedCartItemFromDB = async (
+  user: TAuthUser,
+  id: string //? Product ID
+) => {
+  //? check valid customer
+  const customerData = await prisma.customer.findUniqueOrThrow({
+    where: { userId: user?.id },
+
+    select: {
+      id: true,
+      cart: {
+        include: {
+          cartItems: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const result = await prisma.$transaction(async (txClient) => {
+    //? Deleted cartItem
+    const deletedCartItem = await txClient.cartItem.delete({
+      where: {
+        cartId_productId: {
+          cartId: customerData?.cart?.id as string,
+          productId: id,
+        },
+      },
+    });
+
+    //? Find My Cart
+    const totalCart = await txClient.cart.findUnique({
+      where: {
+        customerId: customerData.id,
+      },
+
+      select: {
+        cartItems: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    const totalAmount = totalCart?.cartItems?.reduce(
+      (acc, item) => acc + item.quantity * item.product.price,
+      0
+    );
+
+    console.log(totalCart);
+
+    if (!totalCart?.cartItems?.length) {
+      await txClient.cart.delete({
+        where: { customerId: customerData.id },
+      });
+    } else {
+      await txClient.cart.update({
+        where: {
+          customerId: customerData.id,
+        },
+
+        data: {
+          totalAmount,
+        },
+      });
+    }
+
+    return deletedCartItem;
+  });
+
+  return result;
+};
+
 export const CartService = {
   getAllCartFromDB,
   addToCartIntoDB,
   changeCartItemQuantityIntoDB,
 
   getMyCartsFromDB,
+  deletedCartItemFromDB,
 };

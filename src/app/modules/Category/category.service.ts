@@ -4,8 +4,13 @@ import QueryBuilder from "../../builder/QueryBuilder";
 import ApiError from "../../errors/ApiError";
 
 const createCategoryIntoDB = async (name: string) => {
-  const item = await prisma.category.findUnique({
-    where: { name },
+  const item = await prisma.category.findFirst({
+    where: {
+      name: {
+        equals: name,
+        mode: "insensitive", //? Case-insensitive comparison
+      },
+    },
   });
 
   if (item) {
@@ -32,8 +37,18 @@ const getAllCategoryFromDB = async (query: Record<string, any>) => {
     where: whereConditions,
     ...pagination,
     orderBy: sorting,
-    include: {
-      products: true,
+    select: {
+      id: true,
+      name: true,
+      _count: {
+        select: {
+          products: {
+            where: {
+              status: "PUBLISHED", //? Filter for products with status = "PUBLISHED"
+            },
+          },
+        },
+      },
     },
   });
 

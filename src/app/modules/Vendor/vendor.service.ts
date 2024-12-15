@@ -1,7 +1,8 @@
-import { Prisma } from "@prisma/client";
+import { Customer, Prisma } from "@prisma/client";
 import { prisma } from "../../../shared";
 import QueryBuilder from "../../builder/QueryBuilder";
 import { vendorSearchableFields } from "./vendor.constant";
+import { TAuthUser } from "../../interfaces";
 
 const getAllVendorFromDB = async (query: Record<string, any>) => {
   const queryBuilder = new QueryBuilder<Prisma.VendorWhereInput>(query)
@@ -39,6 +40,24 @@ const getAllVendorFromDB = async (query: Record<string, any>) => {
   };
 };
 
+const updateMyInfoIntoDB = async (
+  user: TAuthUser,
+  payload: Partial<Customer>
+) => {
+  console.log(payload);
+  const customerData = await prisma.vendor.update({
+    where: {
+      userId: user?.id,
+    },
+
+    data: payload,
+  });
+
+  return customerData;
+};
+
 export const VendorService = {
   getAllVendorFromDB,
+
+  updateMyInfoIntoDB,
 };

@@ -271,6 +271,19 @@ const resetPassword = async (
 const changeEmailIntoDB = async (user: TAuthUser, email: string) => {
   await prisma.user.findUniqueOrThrow({ where: { id: user?.id } });
 
+  const isEmailExist = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (isEmailExist) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      `${email} already exist into database.`
+    );
+  }
+
   return await prisma.user.update({
     where: { id: user?.id },
     data: { email },

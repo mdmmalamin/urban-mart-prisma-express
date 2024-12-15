@@ -49,11 +49,18 @@ const getAllProductFromDB = async (query: Record<string, any>) => {
     },
   });
 
+  const maxPrice = await prisma.product.aggregate({
+    _max: {
+      price: true,
+    },
+  });
+
   return {
     meta: {
       page: queryProducts.paginationOptions.page,
       limit: queryProducts.paginationOptions.limit,
       total,
+      maxPrice: maxPrice._max.price,
     },
     data: result,
   };
@@ -173,6 +180,14 @@ const createProductIntoDB = async (
 
       await txClient.image.createMany({
         data: images,
+      });
+    } else {
+      await txClient.image.create({
+        data: {
+          productId: createProduct.id,
+          url: FALLBACK_IMAGE_URL,
+          isPrimary: true,
+        },
       });
     }
 

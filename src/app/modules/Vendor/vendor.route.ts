@@ -11,4 +11,6 @@ router.get(
   VendorController.getAllVendor
 );
 
+router.patch("/profile", auth(UserRole.VENDOR), VendorController.updateMyInfo);
+
 export const VendorRoutes = router;
