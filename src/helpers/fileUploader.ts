@@ -18,47 +18,76 @@ cloudinary.config({
 });
 
 //? Temporary store into server
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(process.cwd(), "/uploads"));
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  },
-});
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, path.join(process.cwd(), "/uploads"));
+//   },
+//   filename: function (req, file, cb) {
+//     cb(null, file.originalname);
+//   },
+// });
 
-const upload = multer({ storage: storage });
+// const upload = multer({ storage: storage });
+
+// const uploadToCloudinary = async (
+//   file: TFile,
+//   fileName: string,
+//   folder: string
+// ): Promise<TCloudinaryResponse | any> => {
+//   return new Promise((resolve, reject) => {
+//     cloudinary.uploader.upload(
+//       file.path,
+//       {
+//         public_id: fileName,
+//         folder: `urban-mart/${folder}`,
+//       },
+
+//       (
+//         error: UploadApiErrorResponse | undefined,
+//         result: UploadApiResponse | undefined
+//       ) => {
+//         fs.unlinkSync(file.path);
+//         if (error) {
+//           reject(error);
+//         } else {
+//           resolve(result);
+//         }
+//       }
+//     );
+//   });
+// };
 
 const uploadToCloudinary = async (
-  file: TFile,
+  fileBuffer: any,
   fileName: string,
   folder: string
-): Promise<TCloudinaryResponse | any> => {
+) => {
   return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload(
-      file.path,
-      {
-        public_id: fileName,
-        folder: `urban-mart/${folder}`,
-      },
-
-      (
-        error: UploadApiErrorResponse | undefined,
-        result: UploadApiResponse | undefined
-      ) => {
-        fs.unlinkSync(file.path);
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { public_id: fileName, folder: folder },
+      (error, result) => {
         if (error) {
-          reject(error);
-        } else {
-          resolve(result);
+          console.error("Error uploading to Cloudinary:", error);
+          return reject(error);
         }
+        resolve(result);
       }
     );
+
+    // Send the buffer to Cloudinary via stream
+    uploadStream.end(fileBuffer.buffer);
   });
 };
 
+//? Multer storage: store the file in memory
+//! for memoryStorage()
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+//! for memoryStorage()
+
 //? Function to duplicate an image
-const duplicateToCloudinary = async ( //! This is beta version
+const duplicateToCloudinary = async (
+  //! This is beta version
   originalFileName: string,
   newFileName: string
 ): Promise<TCloudinaryResponse | any> => {

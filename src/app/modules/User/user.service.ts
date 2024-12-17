@@ -25,7 +25,7 @@ const createAdminIntoDB = async (
 ) => {
   if (file) {
     const fileName = `${payload?.admin?.fullName}-${payload?.admin?.phone}`;
-    const { secure_url } = await fileUploader.uploadToCloudinary(
+    const { secure_url }: any = await fileUploader.uploadToCloudinary(
       file,
       fileName,
       "profile/admin"

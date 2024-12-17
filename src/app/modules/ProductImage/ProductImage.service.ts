@@ -41,7 +41,7 @@ const updateImagesIntoDB = async (
         const fileName = `${fileUploader.imageName(product.name)}-${idx + 1}`;
 
         //? Attempt to upload to Cloudinary
-        const { secure_url } = await fileUploader.uploadToCloudinary(
+        const { secure_url }: any = await fileUploader.uploadToCloudinary(
           file,
           fileName,
           `product/${await generateFolder(

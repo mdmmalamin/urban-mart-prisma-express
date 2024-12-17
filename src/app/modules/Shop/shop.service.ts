@@ -85,7 +85,7 @@ const createShopIntoDB = async (
 
   if (file) {
     const fileName = `${payload?.name}-${user?.phone}-logo`;
-    const { secure_url } = await fileUploader.uploadToCloudinary(
+    const { secure_url }: any = await fileUploader.uploadToCloudinary(
       file,
       fileName,
       "shop"

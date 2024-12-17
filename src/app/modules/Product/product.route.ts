@@ -17,7 +17,7 @@ router.get("/:id", ProductController.getProduct);
 router.post(
   "/",
   auth(UserRole.VENDOR),
-  fileUploader.upload.array("images"),
+  fileUploader.upload.array("images", 3),
   formDataParser,
   ProductController.createProduct
 );

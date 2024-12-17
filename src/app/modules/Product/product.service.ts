@@ -96,7 +96,6 @@ const createProductIntoDB = async (
   files: TFile[] | undefined,
   payload: TCreateProduct
 ) => {
-  console.log(user, files, payload)
   const vendorData = await prisma.vendor.findUniqueOrThrow({
     where: {
       userId: user?.id,
@@ -152,8 +151,10 @@ const createProductIntoDB = async (
             idx + 1
           }`;
 
+          console.log(file)
+
           //? Attempt to upload to Cloudinary
-          const { secure_url } = await fileUploader.uploadToCloudinary(
+          const { secure_url }: any= await fileUploader.uploadToCloudinary(
             file,
             fileName,
             `product/${await generateFolder(
