@@ -185,7 +185,7 @@ model Product {
 model Image {
   id        String  @id @default(uuid())
   productId String
-  url       String  @unique
+  url       String  
   isPrimary Boolean @default(false)
 
   createdAt DateTime @default(now())

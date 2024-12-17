@@ -33,7 +33,9 @@ router.patch("/:id", auth(UserRole.VENDOR), ProductController.updateProduct);
 router.patch(
   "/:id/status",
   auth(UserRole.VENDOR),
-  ProductController.StatusChange
+  ProductController.statusChange
 );
+
+router.delete("/:id", auth(UserRole.VENDOR), ProductController.deleteProduct);
 
 export const ProductRoutes = router;

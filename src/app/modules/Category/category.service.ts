@@ -4,6 +4,7 @@ import QueryBuilder from "../../builder/QueryBuilder";
 import ApiError from "../../errors/ApiError";
 
 const createCategoryIntoDB = async (name: string) => {
+  console.log(name)
   const item = await prisma.category.findFirst({
     where: {
       name: {

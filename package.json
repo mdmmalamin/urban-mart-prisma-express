@@ -6,6 +6,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "prod": "node ./dist/server.js",
     "build": "npx prisma generate && tsc",
+    "postinstall": "prisma generate",
     "migrate": "npx prisma migrate dev",
     "studio": "npx prisma studio"
   },

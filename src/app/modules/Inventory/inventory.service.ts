@@ -117,7 +117,10 @@ const updateQuantityIntoDB = async (
   return result;
 };
 
-const getMyInventoriesFromDB = async (user: TAuthUser) => {
+const getMyInventoriesFromDB = async (
+  user: TAuthUser,
+  query: Record<string, any>
+) => {
   const vendorData = await prisma.vendor.findUniqueOrThrow({
     where: { userId: user?.id },
   });
@@ -130,19 +133,60 @@ const getMyInventoriesFromDB = async (user: TAuthUser) => {
     throw new ApiError(httpStatus.NOT_FOUND, "No shop created.");
   }
 
-  const result = await prisma.inventory.findMany({
-    where: { shopId: shopData.id },
+  const queryMyInventories = new QueryBuilder<Prisma.InventoryWhereInput>(query)
+    .addSearchCondition(["sku"])
+    .addFilterConditions()
+    .setPagination()
+    .setSorting();
 
-    include: {
-      product: true,
+  const whereConditions = queryMyInventories.buildWhere();
+  const pagination = queryMyInventories.getPagination();
+  const sorting = queryMyInventories.getSorting();
+
+  const result = await prisma.inventory.findMany({
+    where: {
+      ...whereConditions,
+      shopId: shopData.id,
     },
+    ...pagination,
+    orderBy: sorting,
+
+    select: {
+      id: true,
+      sku: true,
+      availableQuantity: true,
+      product: {
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          status: true,
+          images: {
+            select: {
+              url: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const total = await prisma.inventory.count({
+    where: { ...whereConditions, shopId: shopData.id },
   });
 
   if (!result) {
     throw new ApiError(httpStatus.NOT_FOUND, "No inventory found.");
   }
 
-  return result;
+  return {
+    meta: {
+      page: queryMyInventories.paginationOptions.page,
+      limit: queryMyInventories.paginationOptions.limit,
+      total,
+    },
+    data: result,
+  };
 };
 
 export const InventoryService = {

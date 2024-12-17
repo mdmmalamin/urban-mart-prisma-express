@@ -96,6 +96,7 @@ const createProductIntoDB = async (
   files: TFile[] | undefined,
   payload: TCreateProduct
 ) => {
+  console.log(user, files, payload)
   const vendorData = await prisma.vendor.findUniqueOrThrow({
     where: {
       userId: user?.id,
@@ -222,6 +223,7 @@ const createProductIntoDB = async (
 };
 
 const duplicateProductIntoDB = async (id: string) => {
+  console.log(id);
   const productData = await prisma.product.findUniqueOrThrow({
     where: { id },
     include: {
@@ -260,43 +262,6 @@ const duplicateProductIntoDB = async (id: string) => {
         name: productData.name,
       },
     });
-
-    // if (productData.images?.length) {
-    //   const images = productData.images?.map(async ({ url }, idx) => {
-    //     const originalFileName = await fileUploader.extractPublicId(url);
-
-    //     // `product/${await generateFolder(
-    //     //       shopData.name,
-    //     //       shopData.id
-    //     //     )}/${await generateFolder(createProduct.name, createProduct.id)}`
-
-    //     // urban-mart/product/WEI-39CB8B41/MAC-54F52C6E/
-    //     const newFileName = `urban-mart/product/${await generateFolder(
-    //       shopData.name,
-    //       shopData.id
-    //     )}/${await generateFolder(
-    //       createProduct.name,
-    //       createProduct.id
-    //     )}/${fileUploader.imageName(createProduct.name)}-${idx + 1}-copy`;
-
-    //     const { secure_url } = await fileUploader.duplicateToCloudinary(
-    //       originalFileName as string,
-    //       newFileName
-    //     );
-
-    //     console.log("secure_url", secure_url);
-
-    //     return {
-    //       productId: createProduct.id,
-    //       url: secure_url,
-    //       isPrimary: idx === 0 && true,
-    //     };
-    //   });
-
-    //   await txClient.image.createMany({
-    //     data: images as [],
-    //   });
-    // }
 
     await txClient.image.create({
       data: {
@@ -337,16 +302,24 @@ const duplicateProductIntoDB = async (id: string) => {
 };
 
 const updateProductIntoDB = async (id: string, payload: TUpdateProduct) => {
-  await prisma.product.findUniqueOrThrow({ where: { id } });
+  // console.log(id, payload)
+  const productData = await prisma.product.findUniqueOrThrow({ where: { id } });
+  console.log(payload);
 
-  return await prisma.product.update({
+  const result = await prisma.product.update({
     where: { id },
 
-    data: payload,
+    data: {
+      ...payload,
+      price: +payload.price!,
+    },
   });
+
+  console.log(result);
+  return result;
 };
 
-const StatusChangeIntoDB = async (
+const statusChangeIntoDB = async (
   id: string,
   payload: { status: ProductStatus }
 ) => {
@@ -365,11 +338,55 @@ const StatusChangeIntoDB = async (
   return result;
 };
 
+const deleteProductFromDB = async (id: string) => {
+  //? history > images > product > inventory
+  const productData = await prisma.product.findUniqueOrThrow({
+    where: { id },
+
+    include: {
+      images: true,
+      inventory: {
+        include: {
+          histories: true,
+        },
+      },
+    },
+  });
+
+  const result = await prisma.$transaction(async (txClient) => {
+    await txClient.history.deleteMany({
+      where: { inventoryId: productData.inventoryId },
+    });
+
+    await txClient.image.deleteMany({
+      where: { productId: productData.id },
+    });
+
+    await txClient.product.delete({
+      where: { id: productData.id },
+    });
+
+    return await txClient.inventory.delete({
+      where: { id: productData.inventoryId },
+      include: {
+        product: true,
+        histories: true,
+      },
+    });
+  });
+
+  return {
+    ...result,
+    ...productData,
+  };
+};
+
 export const ProductService = {
   getAllProductFromDB,
   getProductFromDB,
   createProductIntoDB,
   duplicateProductIntoDB,
   updateProductIntoDB,
-  StatusChangeIntoDB,
+  statusChangeIntoDB,
+  deleteProductFromDB,
 };

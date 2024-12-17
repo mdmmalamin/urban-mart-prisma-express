@@ -73,16 +73,27 @@ const updateProduct = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const StatusChange = catchAsync(async (req: Request, res: Response) => {
-  const result = await ProductService.StatusChangeIntoDB(
+const statusChange = catchAsync(async (req: Request, res: Response) => {
+  const result = await ProductService.statusChangeIntoDB(
     req.params.id,
     req.body
   );
 
   apiResponse(res, {
-    statusCode: httpStatus.CREATED,
+    statusCode: httpStatus.OK,
     success: true,
     message: `The product status '${req.body.status}' has been updated successfully.`,
+    data: result,
+  });
+});
+
+const deleteProduct = catchAsync(async (req: Request, res: Response) => {
+  const result = await ProductService.deleteProductFromDB(req.params.id);
+
+  apiResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `The product '${result.name}' has been deleted successfully.`,
     data: result,
   });
 });
@@ -93,5 +104,6 @@ export const ProductController = {
   createProduct,
   duplicateProduct,
   updateProduct,
-  StatusChange,
+  statusChange,
+  deleteProduct,
 };

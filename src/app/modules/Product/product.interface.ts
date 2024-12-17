@@ -11,8 +11,8 @@ export type TCreateProduct = {
 };
 
 export type TUpdateProduct = {
-  categoryId: string;
-  name: string;
-  description: string;
-  price: number;
+  categoryId?: string;
+  name?: string;
+  description?: string;
+  price?: number;
 };

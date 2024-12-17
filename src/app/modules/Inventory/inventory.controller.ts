@@ -32,14 +32,16 @@ const updateQuantity = catchAsync(async (req: Request, res: Response) => {
 const getMyInventories = catchAsync(
   async (req: Request & { user?: TAuthUser }, res: Response) => {
     const result = await InventoryService.getMyInventoriesFromDB(
-      req?.user as TAuthUser
+      req?.user as TAuthUser,
+      req.query
     );
 
     apiResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: `All inventories data retrieved successfully.`,
-      data: result,
+      meta: result.meta,
+      data: result.data,
     });
   }
 );
