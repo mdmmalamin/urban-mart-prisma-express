@@ -246,7 +246,7 @@ const resetPassword = async (
     config.jwt.reset_password_secret as Secret
   );
 
-  console.log(isValidToken);
+  // console.log(isValidToken);
 
   if (!isValidToken) {
     throw new ApiError(httpStatus.FORBIDDEN, "Forbidden.");

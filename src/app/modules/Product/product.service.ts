@@ -151,7 +151,7 @@ const createProductIntoDB = async (
             idx + 1
           }`;
 
-          console.log(file)
+          // console.log(file)
 
           //? Attempt to upload to Cloudinary
           const { secure_url }: any= await fileUploader.uploadToCloudinary(
@@ -224,7 +224,7 @@ const createProductIntoDB = async (
 };
 
 const duplicateProductIntoDB = async (id: string) => {
-  console.log(id);
+  // console.log(id);
   const productData = await prisma.product.findUniqueOrThrow({
     where: { id },
     include: {
@@ -303,9 +303,9 @@ const duplicateProductIntoDB = async (id: string) => {
 };
 
 const updateProductIntoDB = async (id: string, payload: TUpdateProduct) => {
-  // console.log(id, payload)
+  // // console.log(id, payload)
   const productData = await prisma.product.findUniqueOrThrow({ where: { id } });
-  console.log(payload);
+  // console.log(payload);
 
   const result = await prisma.product.update({
     where: { id },
@@ -316,7 +316,7 @@ const updateProductIntoDB = async (id: string, payload: TUpdateProduct) => {
     },
   });
 
-  console.log(result);
+  // console.log(result);
   return result;
 };
 

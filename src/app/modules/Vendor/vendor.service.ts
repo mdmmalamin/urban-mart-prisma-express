@@ -44,7 +44,7 @@ const updateMyInfoIntoDB = async (
   user: TAuthUser,
   payload: Partial<Customer>
 ) => {
-  console.log(payload);
+  // console.log(payload);
   const customerData = await prisma.vendor.update({
     where: {
       userId: user?.id,

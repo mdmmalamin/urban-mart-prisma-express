@@ -39,10 +39,10 @@ app.get("/api/v1/health", (req, res) => {
   });
 });
 
-//! Global Error Handler
-app.use(globalErrorHandler);
-
 //? Not Found Handler
 app.use(notFoundHandler);
+
+//! Global Error Handler
+app.use(globalErrorHandler);
 
 export default app;

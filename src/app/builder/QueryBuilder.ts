@@ -132,7 +132,7 @@ class QueryBuilder<TWhereInput> {
     this.sortOptions.sortBy = sortBy;
     this.sortOptions.sortOrder = sortOrder;
 
-    console.log(this);
+    // console.log(this);
     return this;
   }
 

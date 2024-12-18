@@ -92,15 +92,15 @@ const duplicateToCloudinary = async (
   newFileName: string
 ): Promise<TCloudinaryResponse | any> => {
   try {
-    console.log("originalFileName: ", originalFileName);
-    console.log("newFileName: ", newFileName);
+    // console.log("originalFileName: ", originalFileName);
+    // console.log("newFileName: ", newFileName);
     const result = await cloudinary.uploader.explicit(originalFileName, {
       type: "upload",
       public_id: newFileName,
       overwrite: false, //? Ensures the original is not overwritten
     });
 
-    console.log("Image duplicated successfully:", result);
+    // console.log("Image duplicated successfully:", result);
     return await result;
   } catch (error) {
     console.error("Error duplicating image:", error);

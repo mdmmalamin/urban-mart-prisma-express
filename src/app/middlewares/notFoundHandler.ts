@@ -6,7 +6,7 @@ export const notFoundHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  // console.log(req.rawHeaders);
+  // // console.log(req.rawHeaders);
 
   res.status(httpStatus.NOT_FOUND).json({
     status: httpStatus.NOT_FOUND,

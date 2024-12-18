@@ -308,7 +308,7 @@ const deletedCartItemFromDB = async (
       0
     );
 
-    console.log(totalCart);
+    // console.log(totalCart);
 
     if (!totalCart?.cartItems?.length) {
       await txClient.cart.delete({
